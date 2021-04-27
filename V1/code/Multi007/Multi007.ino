@@ -1,27 +1,24 @@
-int pot0;     // actual 0
-int pot1;     // actual 1
-int pot2;     // actual 2
-int pot3;     // demand 0
-int pot4;     // demand 1
-int pot5;     // demand 2
+int pot[6] {};
 
-int pot0Prev;
-int pot1Prev;
-int pot2Prev;
+struct {
+    int prev {};
+    int chg {};
+} pots [3];
 
-int pot0chg = 0;
-int pot1chg = 0;
-int pot2chg = 0;
+struct position{
+    int flag {};
+    const long value {};
 
-int diff0;    // difference 0
-int diff1;    // difference 1
-int diff2;    // difference 2
+    position(long v)
+     : value { v }
+     {}
 
-int pos0Flag = 0;
-int pos1Flag = 0;
-int pos2Flag = 0;
+} pos [3] {{16000}, {0}, {-16000}};
 
-int biggest;
+
+int diff[3] {};
+
+int biggest {};
 
 // wheel encoder interrupts
 
@@ -68,41 +65,41 @@ void loop() {
     if (currentMillis - previousMillis >= 10) {  // start timed loop
           previousMillis = currentMillis;
 
-          pot0 = analogRead(A0);
-          pot0 = map(pot0,0,1023,1023,0);
-          pot1 = analogRead(A1);
-          pot1 = map(pot1,0,1023,1023,0);
-          pot2 = analogRead(A2);
-          pot2 = map(pot2,0,1023,1023,0);
-          pot3 = analogRead(A3);
-          pot4 = analogRead(A4);
-          pot5 = analogRead(A5);
+          pot[0] = analogRead(A0);
+          pot[0] = map(pot[0],0,1023,1023,0);
+          pot[1] = analogRead(A1);
+          pot[1] = map(pot[1],0,1023,1023,0);
+          pot[2] = analogRead(A2);
+          pot[2] = map(pot[2],0,1023,1023,0);
+          pot[3] = analogRead(A3);
+          pot[4] = analogRead(A4);
+          pot[5] = analogRead(A5);
 
-          diff0 = pot0 - pot3;
-          diff1 = pot1 - pot4;
-          diff2 = pot2 - pot5;
+          diff[0] = pot[0] - pot[3];
+          diff[1] = pot[1] - pot[4];
+          diff[2] = pot[2] - pot[5];
 
           // work out which error is the biggest with some deadspot
 
-          if (abs(diff0) > (abs(diff1)+10) && abs(diff0) > (abs(diff2)+10)) {
-              if (pos1Flag == 0 && pos2Flag == 0 && pot1chg == 0 && pot2chg == 0) {
-                pos0Flag = 1;
+          if (abs(diff[0]) > (abs(diff[1])+10) && abs(diff[0]) > (abs(diff[2])+10)) {
+              if (pos[1].flag == 0 && pos[2].flag == 0 && pots[1].chg == 0 && pots[2].chg == 0) {
+                pos[0].flag = 1;
                 biggest = 0;
-                encoder0Target = 16000;   // move linear axis
+                encoder0Target = pos[0].value;   // move linear axis
               }
           }
-          else if (abs(diff1) > (abs(diff0)+10) && abs(diff1) > (abs(diff2)+10)) {
-              if (pos0Flag == 0 && pos2Flag == 0 && pot0chg == 0 && pot2chg == 0) {
-                pos1Flag = 1;
+          else if (abs(diff[1]) > (abs(diff[0])+10) && abs(diff[1]) > (abs(diff[2])+10)) {
+              if (pos[0].flag == 0 && pos[2].flag == 0 && pots[0].chg == 0 && pots[2].chg == 0) {
+                pos[1].flag = 1;
                 biggest = 1;
-                encoder0Target = 0;   // move linear axis
+                encoder0Target = pos[1].value;   // move linear axis
               }
           }
-          else if (abs(diff2) > (abs(diff0)+10) && abs(diff2) > (abs(diff1)+10)) {
-              if (pos0Flag == 0 && pos1Flag == 0 && pot0chg == 0 && pot1chg == 0) {
-                pos2Flag = 1;
+          else if (abs(diff[2]) > (abs(diff[0])+10) && abs(diff[2]) > (abs(diff[1])+10)) {
+              if (pos[0].flag == 0 && pos[1].flag == 0 && pots[0].chg == 0 && pots[1].chg == 0) {
+                pos[2].flag = 1;
                 biggest = 2;
-                encoder0Target = -16000;    // move linear axis
+                encoder0Target = pos[2].value;    // move linear axis
               }
           }
 
@@ -112,41 +109,41 @@ void loop() {
           if (currentMillis - previousPotMillis >= 100) {  // start timed loop
             previousPotMillis = currentMillis;
 
-                if (pot0 == pot0Prev) {
-                    pot0chg = 0;
+                if (pot[0] == pots[0].prev) {
+                    pots[0].chg = 0;
                 }
-                else { pot0chg = 1; }
+                else { pots[0].chg = 1; }
       
-                if (pot1 == pot1Prev) {
-                    pot1chg = 0;
+                if (pot[1] == pots[1].prev) {
+                    pots[1].chg = 0;
                 }
-                else { pot1chg = 1; }
+                else { pots[1].chg = 1; }
       
-                if (pot2 == pot2Prev) {
-                    pot2chg = 0;
+                if (pot[2] == pots[2].prev) {
+                    pots[2].chg = 0;
                 }
-                else { pot2chg = 1; }
+                else { pots[2].chg = 1; }
       
                 // boommark 'previous' values so we can compare them
       
-                pot0Prev = pot0;
-                pot1Prev = pot1;
-                pot2Prev = pot2;
+                pots[0].prev = pot[0];
+                pots[1].prev = pot[1];
+                pots[2].prev = pot[2];
 
           }
 
           // serial debug
 
           Serial.print("  zero:  ");
-          Serial.print(diff0);
+          Serial.print(diff[0]);
           Serial.print("  one:  ");
-          Serial.print(diff1);
+          Serial.print(diff[1]);
           Serial.print("  two:  ");
-          Serial.print(diff2);
+          Serial.print(diff[2]);
           Serial.print("     biggest is: ");
           Serial.print(biggest);
           Serial.print("   ");    
-          Serial.print(pot1chg);
+          Serial.print(pots[1].chg);
           Serial.print("   ");      
 
           // check if the linear axis got to the target yet
@@ -155,52 +152,52 @@ void loop() {
             
             if (biggest == 0) {
               Serial.print("arrived at 0");            
-              if (diff0 > 0 + 20) {
+              if (diff[0] > 0 + 20) {
                 analogWrite(6, 255);
                 analogWrite(7, 0);
               }
-              else if (diff0 < 0 - 20){
+              else if (diff[0] < 0 - 20){
                 analogWrite(6, 0);
                 analogWrite(7, 255);
               }
               else {
                 analogWrite(6, 0);
                 analogWrite(7, 0);
-                pos0Flag = 0;
+                pos[0].flag = 0;
               }              
             }
             
             else if (biggest == 1) {
               Serial.print("arived at 1");
-              if (diff1 > 0 + 20) {
+              if (diff[1] > 0 + 20) {
                 analogWrite(6, 255);
                 analogWrite(7, 0);
               }
-              else if (diff1 < 0 - 20){
+              else if (diff[1] < 0 - 20){
                 analogWrite(6, 0);
                 analogWrite(7, 255);
               }
               else {
                 analogWrite(6, 0);
                 analogWrite(7, 0);
-                pos1Flag = 0;
+                pos[1].flag = 0;
               }
             }
             
             else if (biggest == 2) {
               Serial.print("arrived at 2");
-              if (diff2 > 0 + 20){
+              if (diff[2] > 0 + 20){
                 analogWrite(6, 255);
                 analogWrite(7, 0);
               }
-              else if (diff2 < 0 - 20){
+              else if (diff[2] < 0 - 20){
                 analogWrite(6, 0);
                 analogWrite(7, 255);
               }
               else {
                 analogWrite(6, 0);
                 analogWrite(7, 0);
-                pos2Flag = 0;
+                pos[2].flag = 0;
               }
             }
           }
