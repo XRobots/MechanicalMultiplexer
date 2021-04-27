@@ -35,6 +35,18 @@ unsigned long previousMillis;
 unsigned long currenPotMillis;
 unsigned long previousPotMillis;
 
+inline bool check_flag(int i) {
+  return (pos[i].flag == 0) && (pots[i].chg == 0);
+}
+
+inline bool check_difference(int i) {
+  const int target = abs(diff[i]);
+  return ((i == 0) || ((target - abs(diff[0])) > 10)) &&
+         ((i == 1) || ((target - abs(diff[1])) > 10)) &&
+         ((i == 2) || ((target - abs(diff[2])) > 10));
+}
+
+
 void setup() {
 
     pinMode(encoder0PinA, INPUT_PULLUP);    // encoder pins
@@ -81,27 +93,17 @@ void loop() {
 
           // work out which error is the biggest with some deadspot
 
-          if (abs(diff[0]) > (abs(diff[1])+10) && abs(diff[0]) > (abs(diff[2])+10)) {
-              if (pos[1].flag == 0 && pos[2].flag == 0 && pots[1].chg == 0 && pots[2].chg == 0) {
-                pos[0].flag = 1;
-                biggest = 0;
-                encoder0Target = pos[0].value;   // move linear axis
-              }
-          }
-          else if (abs(diff[1]) > (abs(diff[0])+10) && abs(diff[1]) > (abs(diff[2])+10)) {
-              if (pos[0].flag == 0 && pos[2].flag == 0 && pots[0].chg == 0 && pots[2].chg == 0) {
-                pos[1].flag = 1;
-                biggest = 1;
-                encoder0Target = pos[1].value;   // move linear axis
-              }
-          }
-          else if (abs(diff[2]) > (abs(diff[0])+10) && abs(diff[2]) > (abs(diff[1])+10)) {
-              if (pos[0].flag == 0 && pos[1].flag == 0 && pots[0].chg == 0 && pots[1].chg == 0) {
-                pos[2].flag = 1;
-                biggest = 2;
-                encoder0Target = pos[2].value;    // move linear axis
-              }
-          }
+            for (int i{0}; i < 3; i++) {
+                if (check_difference(i)) {
+                    if (((i == 0) || check_flag(0)) && ((i == 1) || check_flag(1)) &&
+                        ((i == 2) || check_flag(2))) {
+                    pos[i].flag = 1;
+                    biggest = i;
+                    encoder0Target = pos[i].value; // move linear axis
+                    }
+                    break;
+                }
+            }
 
           // check if demand positions have changed since the last loop
           // I am running this slower so there are bigger changes in the pots on each cycle of the loop when I am moving them
@@ -109,26 +111,10 @@ void loop() {
           if (currentMillis - previousPotMillis >= 100) {  // start timed loop
             previousPotMillis = currentMillis;
 
-                if (pot[0] == pots[0].prev) {
-                    pots[0].chg = 0;
-                }
-                else { pots[0].chg = 1; }
-      
-                if (pot[1] == pots[1].prev) {
-                    pots[1].chg = 0;
-                }
-                else { pots[1].chg = 1; }
-      
-                if (pot[2] == pots[2].prev) {
-                    pots[2].chg = 0;
-                }
-                else { pots[2].chg = 1; }
-      
-                // boommark 'previous' values so we can compare them
-      
-                pots[0].prev = pot[0];
-                pots[1].prev = pot[1];
-                pots[2].prev = pot[2];
+            for (int i{0}; i < 3; i++) {
+                pots[i].chg = (pot[i] == pots[i].prev) ? 0 : 1;
+                pots[i].prev = pot[i];
+            }
 
           }
 
@@ -149,56 +135,23 @@ void loop() {
           // check if the linear axis got to the target yet
           encoderDiff = abs(encoder0Target - encoder0Pos);
           if (encoderDiff < 300) {    // if we got to the target then move the motor that drives the worm gears
-            
-            if (biggest == 0) {
-              Serial.print("arrived at 0");            
-              if (diff[0] > 0 + 20) {
-                analogWrite(6, 255);
-                analogWrite(7, 0);
-              }
-              else if (diff[0] < 0 - 20){
-                analogWrite(6, 0);
-                analogWrite(7, 255);
-              }
-              else {
-                analogWrite(6, 0);
-                analogWrite(7, 0);
-                pos[0].flag = 0;
-              }              
-            }
-            
-            else if (biggest == 1) {
-              Serial.print("arived at 1");
-              if (diff[1] > 0 + 20) {
-                analogWrite(6, 255);
-                analogWrite(7, 0);
-              }
-              else if (diff[1] < 0 - 20){
-                analogWrite(6, 0);
-                analogWrite(7, 255);
-              }
-              else {
-                analogWrite(6, 0);
-                analogWrite(7, 0);
-                pos[1].flag = 0;
-              }
-            }
-            
-            else if (biggest == 2) {
-              Serial.print("arrived at 2");
-              if (diff[2] > 0 + 20){
-                analogWrite(6, 255);
-                analogWrite(7, 0);
-              }
-              else if (diff[2] < 0 - 20){
-                analogWrite(6, 0);
-                analogWrite(7, 255);
-              }
-              else {
-                analogWrite(6, 0);
-                analogWrite(7, 0);
-                pos[2].flag = 0;
-              }
+            for (int i{0}; i < 3; i++) {
+                if (biggest != i) {
+                    continue;
+                }
+                Serial.print("arrived at 0");
+                if (diff[i] > 0 + 20) {
+                    analogWrite(6, 255);
+                    analogWrite(7, 0);
+                } else if (diff[i] < 0 - 20) {
+                    analogWrite(6, 0);
+                    analogWrite(7, 255);
+                } else {
+                    analogWrite(6, 0);
+                    analogWrite(7, 0);
+                    pos[i].flag = 0;
+                }
+                break;
             }
           }
           
