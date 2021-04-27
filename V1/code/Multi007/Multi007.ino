@@ -47,6 +47,22 @@ inline bool check_difference(int i) {
 }
 
 
+inline int encoder_parity()
+{
+    if (digitalRead(encoder0PinA) == digitalRead(encoder0PinB)) {
+        return 1;
+    }
+    return -1;
+}
+
+void doEncoderA() {
+    encoder0Pos += - encoder_parity();
+}
+
+void doEncoderB() {
+    encoder0Pos += encoder_parity();
+}
+
 void setup() {
 
     pinMode(encoder0PinA, INPUT_PULLUP);    // encoder pins
@@ -177,18 +193,3 @@ void loop() {
 
 }
 
-inline int encoder_parity()
-{
-    if (digitalRead(encoder0PinA) == digitalRead(encoder0PinB)) {
-        return 1;
-    }
-    return -1;
-}
-
-void doEncoderA() {
-    encoder0Pos += - encoder_parity();
-}
-
-void doEncoderB() {
-    encoder0Pos += encoder_parity();
-}
