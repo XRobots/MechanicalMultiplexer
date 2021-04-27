@@ -22,8 +22,8 @@ int biggest {};
 
 // wheel encoder interrupts
 
-#define encoder0PinA 2      // encoder 1
-#define encoder0PinB 3
+constexpr int encoder0PinA { 2 };
+constexpr int encoder0PinB { 3 };
 
 volatile long encoder0Pos = 0;    // encoder 1
 long encoder0Target = 0;
